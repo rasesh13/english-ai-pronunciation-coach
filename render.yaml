@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: english-ai-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: CORS_ORIGINS
+        value: https://english-ai.vercel.app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: english-ai-db
+          property: connectionString
+
+databases:
+  - name: english-ai-db
+    plan: free
+    databaseName: english_ai
+    user: english_ai
