@@ -41,13 +41,13 @@ Command:
 npm run verify:rime
 ```
 
-Observed production state before this update:
+Observed in production at `2026-09-10T10:37:13.511Z`:
 
-- `GET /api/english/health`: `200`, `providers.rime: false`
-- `POST /api/english/tts`: `503`, JSON error response, no audio stream
-- `/api/voice`: `configured: false`, model `coda`, voice `astra`
+- `GET /api/english/health`: `200`, `providers.rime: true`, `rime.configured: true`
+- Slow speech: `200`, `audio/mpeg`, provider `Rime`, model `coda`, speaker `astra`, language `en-US`, first audio in `1153 ms`, first chunk `3816` bytes
+- Normal speech: `200`, `audio/mpeg`, provider `Rime`, model `coda`, speaker `astra`, language `en-US`, first audio in `801 ms`, first chunk `2367` bytes
 
-Result: **Rime live acceptance is blocked because `RIME_API_KEY` is not configured on the deployed FastAPI service.** This is not a Rime latency measurement and must not be presented as one. After the server-only key is added in Render and the service redeploys, rerun `npm run verify:rime` and replace this subsection with its timestamped passing output before recording the judged demo.
+Result: **PASS — the public production path returned non-empty streamed Rime audio for both supported speeds and exposed the expected provider evidence headers.** These timings verify this run and deployment path; they are not a universal latency guarantee.
 
 ## Failure behavior
 
@@ -61,5 +61,5 @@ Result: **Rime live acceptance is blocked because `RIME_API_KEY` is not configur
 - The automated fence test is deterministic but does not measure microphone-to-stop latency on every device.
 - Network and browser scheduling affect the observed interruption time.
 - Browser speech fallback validates resilience, not Rime quality or availability.
-- Positive live evidence cannot be committed until the deployment owner supplies the Rime secret outside Git.
+- The production result depends on a valid server-only Rime secret remaining configured in Render; the secret is never stored in Git or printed by the verification script.
 - Pronunciation scoring is educational feedback and not a clinical or accent-bias evaluation.
