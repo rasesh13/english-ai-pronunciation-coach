@@ -1,6 +1,8 @@
 # EnglishAI demo — 4:20 maximum
 
-Recording link: add the final public, view-only video URL here after the production Rime check passes. Do not record a claimed Rime run while `npm run verify:rime` is failing.
+Recording: [EnglishAI demo video (Google Drive)](https://drive.google.com/file/d/13CR2kNQFUnLurgG5J7QxmiawSwcxtWEn/view?usp=sharing)
+
+The recording is the submitted demonstration artifact. Provider claims shown in the recording should be checked against `npm run verify:rime`; `RIME READY` indicates configuration, while `RIME · CODA · ASTRA` proves a successful Rime audio response.
 
 ## Before recording
 
