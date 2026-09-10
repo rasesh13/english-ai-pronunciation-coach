@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import OrbitWorld from "@/components/orbit-world";
 
 type OrbitState = "IDLE" | "LISTENING" | "THINKING" | "ACTING" | "SPEAKING" | "INTERRUPTED" | "RECOVERING" | "COMPLETE";
-type Point = { x: number; y: number };
 type Particle = { u: number; v: number; seed: number; size: number };
 type Vector3 = [number, number, number];
 type LogEvent = { label: string; time: string; tone: "normal" | "live" | "warning" };
@@ -42,9 +41,6 @@ const stateCopy: Record<OrbitState, string> = {
 };
 
 export default function Home() {
-  const [entered, setEntered] = useState(false);
-  const [drawPoints, setDrawPoints] = useState<Point[]>([]);
-  const [drawFailed, setDrawFailed] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeStage, setActiveStage] = useState(0);
   const [state, setState] = useState<OrbitState>("IDLE");
@@ -68,7 +64,6 @@ export default function Home() {
   const [learnerState, setLearnerState] = useState<LearnerState>({ attempts: [], mistakes: [], stats: { attempts: 0, recurringMistakes: 0, bestScore: 0, averageScore: 0 } });
   const targetProgressRef = useRef(0);
   const progressRef = useRef(0);
-  const drawActiveRef = useRef(false);
   const requestRef = useRef(0);
   const controllerRef = useRef<AbortController | null>(null);
   const timerIntervalRef = useRef<number | null>(null);
@@ -124,13 +119,12 @@ export default function Home() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setMenuOpen(false);
-      if (!entered) return;
       const requestedStage = ["ArrowDown", "ArrowRight", "PageDown"].includes(event.key) ? Math.min(4, activeStage + 1) : ["ArrowUp", "ArrowLeft", "PageUp"].includes(event.key) ? Math.max(0, activeStage - 1) : null;
       if (requestedStage !== null) { const value = requestedStage / 4; targetProgressRef.current = value; progressRef.current = value; setProgress(value); setActiveStage(requestedStage); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeStage, entered]);
+  }, [activeStage]);
 
   useEffect(() => () => {
     controllerRef.current?.abort();
@@ -145,17 +139,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    document.body.classList.toggle("orbit-locked", !entered);
-    document.documentElement.classList.toggle("orbit-locked", !entered);
-    if (!entered) window.scrollTo(0, 0);
-    return () => {
-      document.body.classList.remove("orbit-locked");
-      document.documentElement.classList.remove("orbit-locked");
-    };
-  }, [entered]);
-
-  useEffect(() => {
-    if (!entered) return;
     const syncJourney = () => {
       const journey = journeyRef.current;
       if (!journey) return;
@@ -182,7 +165,7 @@ export default function Home() {
       if (scrollSnapRef.current !== null) window.clearTimeout(scrollSnapRef.current);
       scrollSnapRef.current = null;
     };
-  }, [entered, menuOpen]);
+  }, [menuOpen]);
 
   function ensureSession() {
     if (sessionIdRef.current) return sessionIdRef.current;
@@ -401,26 +384,18 @@ export default function Home() {
     const next = Math.min(4, Math.max(0, index));
     setJourney(next / 4);
     const journey = journeyRef.current;
-    if (entered && journey) {
+    if (journey) {
       const travel = Math.max(1, journey.offsetHeight - window.innerHeight);
       window.scrollTo({ top: journey.offsetTop + (next / 4) * travel, behavior: "smooth" });
     }
   }
-  function finishDrawing() {
-    drawActiveRef.current = false;
-    if (drawPoints.length < 16) { setDrawFailed(true); return; }
-    const start = drawPoints[0], end = drawPoints[drawPoints.length - 1];
-    const bounds = drawPoints.reduce((value, point) => ({ minX: Math.min(value.minX, point.x), maxX: Math.max(value.maxX, point.x), minY: Math.min(value.minY, point.y), maxY: Math.max(value.maxY, point.y) }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
-    if (Math.hypot(start.x - end.x, start.y - end.y) < 95 && bounds.maxX - bounds.minX > 100 && bounds.maxY - bounds.minY > 100) { setEntered(true); setDrawFailed(false); } else setDrawFailed(true);
-  }
-  function addDrawPoint(event: React.PointerEvent) { if (drawActiveRef.current) setDrawPoints((points) => [...points, { x: event.clientX, y: event.clientY }].slice(-220)); }
   function phraseForCategory(index: number) { return catalog.find((item) => item.category === toolNames[index])?.phrase || toolExamples[index]; }
 
   const stageProgress = progress * 4;
   return (
     <main className="orbit-page">
       <div className="orbit-journey" ref={journeyRef}>
-      <section className={`zero-orbit scene-${activeStage} state-${state.toLowerCase()} ${entered ? "has-entered" : "is-gated"}`}>
+      <section className={`zero-orbit scene-${activeStage} state-${state.toLowerCase()} has-entered`}>
       <svg className="svg-filters" aria-hidden="true"><defs><filter id="liquid-edge" x="-35%" y="-20%" width="170%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.009 0.026" numOctaves="2" seed="17" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="48" xChannelSelector="R" yChannelSelector="B" /><feGaussianBlur stdDeviation="1.8" /></filter></defs></svg>
       <div className="world-frame" aria-hidden="true">
         <div className="world-light" />
@@ -429,10 +404,7 @@ export default function Home() {
         <div className="orbit-relic"><i /><i /><i /><i /><i /></div>
         <div className="paper-noise" />
       </div>
-      {!entered && <div className="draw-gate" onPointerDown={(event) => { drawActiveRef.current = true; setDrawPoints([{ x: event.clientX, y: event.clientY }]); setDrawFailed(false); event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={addDrawPoint} onPointerUp={finishDrawing}>
-        <svg className="draw-path" aria-hidden="true"><polyline points={drawPoints.map((point) => `${point.x},${point.y}`).join(" ")} /></svg><div className="gate-comet" aria-hidden="true" /><p>{drawFailed ? "CLOSE THE ORBIT" : "DRAW AN ORBIT"}</p><button onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); setEntered(true); }}>SKIP INTRO</button>
-      </div>}
-      <div className="interface" aria-hidden={!entered} inert={!entered}>
+      <div className="interface">
         <button className="glass-circle audio-toggle" onClick={() => { setSoundOn((value) => !value); stopAudio(); }} aria-label="Toggle audio" aria-pressed={soundOn}><span className={soundOn ? "wave-on" : ""}>⌁</span></button>
         <div className="stage-ruler" aria-label="Experience timeline"><div className="ruler-labels">{stages.map((stage, index) => <button className={activeStage === index ? "active" : ""} onClick={() => goToStage(index)} key={stage.code}>{index * 25 - 100} OZ</button>)}</div><div className="ruler-cursor" /><div className="ruler-track" style={{ transform: `translateX(${-progress * 52}%)` }}>{ticks.map((tick) => <i className={tick % 12 === 0 ? "major" : ""} key={tick} />)}</div><b>{activeStage * 25 - 100} OZ / {stages[activeStage].short}</b></div>
         <div className={`glass-pill latency-badge backend-${backendStatus.toLowerCase()}`}><i>✦</i> {timerRemaining > 0 ? `${timerRemaining}s` : metrics.audio === "--" ? backendStatus : metrics.audio}</div>
@@ -463,7 +435,7 @@ export default function Home() {
       </div>
       </section>
       </div>
-      <ProjectStory onLaunch={(toolIndex = activeTool) => { setEntered(true); setActiveTool(toolIndex); setCommand(toolExamples[toolIndex]); setMenuOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+      <ProjectStory onLaunch={(toolIndex = activeTool) => { setActiveTool(toolIndex); setCommand(toolExamples[toolIndex]); setMenuOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
     </main>
   );
 }

@@ -12,7 +12,6 @@
 html { scroll-behavior: smooth; }
 html, body { width: 100%; min-height: 100%; margin: 0; background: #e6e4dc; }
 body { overflow-x: hidden; overflow-y: auto; color: var(--ink); font-family: Manrope, Arial, sans-serif; }
-html.orbit-locked, body.orbit-locked { overflow: hidden; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 .svg-filters { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -100,17 +99,6 @@ button { cursor: pointer; }
 .scene-3 .orbit-relic { transform: translate(-50%,-48%) rotate(-25deg) scale(1.1); }
 .scene-4 .orbit-relic { width: min(49vw,740px); height: min(49vw,740px); transform: translate(-50%,-44%) rotate(58deg) scale(.74); }
 .paper-noise { position: absolute; z-index: 7; inset: 0; pointer-events: none; opacity: .44; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E"); }
-
-.draw-gate { position: absolute; z-index: 20; inset: 10px; overflow: hidden; isolation: isolate; border-radius: 28px; background: radial-gradient(ellipse at 48% 81%,rgba(220,245,225,.7),transparent 30%),radial-gradient(ellipse at 24% 13%,rgba(201,224,214,.55),transparent 36%),linear-gradient(118deg,#3d6058,#9bb8ae 43%,#64877d 70%,#28483f); cursor: crosshair; touch-action: none; transition: opacity 1.05s cubic-bezier(.2,.7,.2,1),visibility 1.05s; }
-.draw-gate::before { content: ""; position: absolute; z-index: -1; left: 50%; top: -17%; width: min(34vw,510px); min-width: 350px; height: 128%; transform: translateX(-50%) rotate(7deg); border-radius: 58% 42% 62% 38% / 34% 55% 45% 66%; background: radial-gradient(circle at 42% 18%,#d5fa83 0 5%,transparent 18%),radial-gradient(circle at 57% 37%,#8ee87a 0 10%,transparent 24%),radial-gradient(circle at 42% 55%,#93eb8d 0 15%,rgba(84,194,112,.7) 28%,transparent 47%),radial-gradient(circle at 48% 79%,#8de1eb 0 14%,rgba(79,179,186,.55) 32%,transparent 52%); opacity: .9; filter: url("#liquid-edge") blur(1px) saturate(1.12); box-shadow: 0 0 100px rgba(180,255,112,.42); animation: liquidDrift 10s ease-in-out infinite alternate; }
-.draw-gate::after { content: ""; position: absolute; z-index: -2; inset: -10%; background: repeating-radial-gradient(ellipse at 45% 48%,transparent 0 26px,rgba(225,247,237,.1) 27px 29px,transparent 31px 52px); filter: blur(2px); animation: worldDrift 15s ease-in-out infinite alternate; }
-.has-entered .draw-gate { opacity: 0; visibility: hidden; }
-.draw-gate > p { position: absolute; z-index: 4; left: 50%; top: 50%; margin: 0; transform: translate(-50%,-50%); color: #fff; text-shadow: 0 2px 16px #163d34; font: 500 15px 'DM Mono'; letter-spacing: .18em; white-space: nowrap; }
-.draw-gate > button { position: absolute; right: 26px; bottom: 22px; padding: 8px 10px; color: rgba(255,255,255,.62); border: 0; background: transparent; font: 500 9px 'DM Mono'; letter-spacing: .14em; opacity: .45; }
-.gate-comet { position: absolute; z-index: 2; left: calc(50% - 18px); top: calc(50% - 150px); width: 11px; height: 11px; border-radius: 50%; background: #fff; box-shadow: 0 0 14px 3px #fff,0 0 32px 7px #c6ffe8; animation: cometOrbit 4.8s cubic-bezier(.45,.05,.55,.95) infinite; }
-.gate-comet::after { content: ""; position: absolute; right: 5px; top: 5px; width: 66px; height: 3px; background: linear-gradient(90deg,transparent,#fff); filter: blur(2px); transform: rotate(-8deg); transform-origin: right center; }
-.draw-path { position: absolute; z-index: 3; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.draw-path polyline { fill: none; stroke: #f5ffe9; stroke-width: 13; stroke-linecap: round; stroke-linejoin: round; opacity: .88; filter: drop-shadow(0 0 8px #b9ff72) blur(.3px); }
 
 .interface { position: absolute; z-index: 10; inset: 0; opacity: 0; pointer-events: none; transition: opacity .8s .15s; }
 .has-entered .interface { opacity: 1; pointer-events: auto; }
@@ -424,14 +412,12 @@ body.dome-open { overflow: hidden; }
 @keyframes worldDrift { to { transform: translate(3vw,-2vh) rotate(2deg) scale(1.06); } }
 @keyframes relicBreathe { to { transform: translateX(-50%) rotate(-4deg) scale(1.08); border-radius: 43% 57% 39% 61% / 58% 36% 64% 42%; } }
 @keyframes shardFloat { to { translate: 7px -12px; rotate: 9deg; scale: 1.08; } }
-@keyframes liquidDrift { to { transform: translateX(calc(-50% - 3vw)) rotate(-2deg) scale(1.07); border-radius: 44% 56% 38% 62% / 58% 37% 63% 42%; } }
-@keyframes cometOrbit { 0% { transform: translate(-120px,70px) rotate(-12deg); } 34% { transform: translate(84px,-38px) rotate(16deg); } 68% { transform: translate(104px,112px) rotate(145deg); } 100% { transform: translate(-120px,70px) rotate(348deg); } }
 @keyframes micPulse { to { transform: scale(.88); box-shadow: 0 0 0 9px rgba(91,241,200,.24); } }
 @keyframes finalSpin { to { transform: rotate(360deg); } }
 
 @media (max-width: 760px) {
   .orbit-journey { height: 500svh; }
-  .world-frame, .draw-gate { inset: 6px; border-radius: 22px; }
+  .world-frame { inset: 6px; border-radius: 22px; }
   .world-light { left: 50%; top: -8%; width: 72vw; min-width: 0; height: 68%; opacity: .3; }
   .orbit-canvas { opacity: .55; -webkit-mask-image: linear-gradient(180deg,#000 0 38%,transparent 70%); mask-image: linear-gradient(180deg,#000 0 38%,transparent 70%); }
   .orbit-relic, .scene-1 .orbit-relic, .scene-2 .orbit-relic, .scene-3 .orbit-relic, .scene-4 .orbit-relic { left: 50%; top: 24%; width: 58vw; height: 34vh; opacity: .34; transform: translate(-50%,-50%) rotate(8deg) scale(.9); }
@@ -456,7 +442,6 @@ body.dome-open { overflow: hidden; }
   .stage-dots button span { display: none; }
   .scroll-cue { bottom: 88px; max-width: 85vw; overflow: hidden; text-overflow: ellipsis; }
   .command-panel { right: 12px; bottom: 84px; max-height: calc(100vh - 105px); }
-  .draw-gate > p { font-size: 12px; }
   .content-shell { padding: 92px 24px; }
   .intro-grid, .architecture-section header, .tools-section header, .principles-section, .interruption-grid { grid-template-columns: 1fr; gap: 36px; }
   .intro-grid { margin-top: 42px; }
