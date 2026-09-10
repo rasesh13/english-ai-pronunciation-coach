@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const rimeConfig = {
   model: process.env.RIME_MODEL || "coda",
   voice: process.env.RIME_VOICE || "astra",
-  language: process.env.RIME_LANGUAGE || "en",
+  language: process.env.RIME_LANGUAGE || "en-US",
 };
 
 export async function GET() {

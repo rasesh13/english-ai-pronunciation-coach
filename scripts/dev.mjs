@@ -7,8 +7,9 @@ const workspace = process.cwd();
 const { loadEnvConfig } = nextEnvironment;
 loadEnvConfig(workspace);
 const nextBinary = path.join(workspace, "node_modules", "next", "dist", "bin", "next");
-const venvPython = path.join(workspace, "backend", ".venv", "Scripts", "python.exe");
-const python = existsSync(venvPython) ? venvPython : "python";
+const windowsVenvPython = path.join(workspace, "backend", ".venv", "Scripts", "python.exe");
+const unixVenvPython = path.join(workspace, "backend", ".venv", "bin", "python");
+const python = existsSync(windowsVenvPython) ? windowsVenvPython : existsSync(unixVenvPython) ? unixVenvPython : "python";
 const sharedEnvironment = { ...process.env, FASTAPI_URL: process.env.FASTAPI_URL || "http://127.0.0.1:8000" };
 
 const api = spawn(python, ["-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8000"], { cwd: workspace, env: sharedEnvironment, stdio: "inherit", windowsHide: true });

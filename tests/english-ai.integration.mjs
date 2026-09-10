@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -9,7 +10,9 @@ const temporaryDirectory = await mkdtemp(path.join(tmpdir(), "english-ai-integra
 const databaseFile = path.join(temporaryDirectory, "english-ai.db");
 const port = 33_000 + Math.floor(Math.random() * 700);
 const origin = `http://127.0.0.1:${port}`;
-const python = path.join(workspace, "backend", ".venv", "Scripts", "python.exe");
+const windowsVenvPython = path.join(workspace, "backend", ".venv", "Scripts", "python.exe");
+const unixVenvPython = path.join(workspace, "backend", ".venv", "bin", "python");
+const python = existsSync(windowsVenvPython) ? windowsVenvPython : existsSync(unixVenvPython) ? unixVenvPython : "python";
 const server = spawn(python, ["-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", String(port)], {
   cwd: workspace,
   env: { ...process.env, DATABASE_URL: `sqlite:///${databaseFile.replaceAll("\\", "/")}`, RIME_API_KEY: "", OPENAI_API_KEY: "", STT_API_KEY: "" },
@@ -48,6 +51,17 @@ try {
   assert.equal(health.status, "ok");
   assert.equal(health.providers.whisper, false);
   assert.equal(health.providers.rime, false);
+  assert.deepEqual(health.rime, {
+    configured: false,
+    provider: "Rime",
+    modelId: "coda",
+    speaker: "astra",
+    language: "en-US",
+    endpoint: "https://users.rime.ai/v1/rime-tts",
+    audioFormat: "audio/mpeg",
+    requestTransport: "HTTPS POST + JSON",
+    responseTransport: "streamed HTTP response",
+  });
 
   const catalog = await (await fetch(`${origin}/catalog`)).json();
   assert.equal(catalog.items.length, 20);

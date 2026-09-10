@@ -10,8 +10,11 @@
     "start": "next start",
     "start:api": "backend\\.venv\\Scripts\\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000",
     "lint": "eslint",
+    "test:rime-config": "node scripts/rime-config-preflight.mjs",
+    "verify:rime": "node scripts/rime-live-check.mjs",
     "test:english": "node tests/english-ai.integration.mjs",
-    "test:integration": "npm run build && node tests/orbit.integration.mjs"
+    "test:integration": "npm run build && node tests/orbit.integration.mjs",
+    "judge:preflight": "npm run test:rime-config && npm run lint && npm run build && npm run test:english"
   },
   "dependencies": {
     "next": "16.3.4",

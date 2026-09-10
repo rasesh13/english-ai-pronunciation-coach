@@ -54,6 +54,20 @@ class ClearRequest(BaseModel):
     id: str | None = Field(default=None, max_length=80)
 
 
+def rime_details() -> dict[str, Any]:
+    return {
+        "configured": bool(os.getenv("RIME_API_KEY")),
+        "provider": "Rime",
+        "modelId": os.getenv("RIME_MODEL", "coda"),
+        "speaker": os.getenv("RIME_VOICE", "astra"),
+        "language": os.getenv("RIME_LANGUAGE", "en-US"),
+        "endpoint": os.getenv("RIME_ENDPOINT", "https://users.rime.ai/v1/rime-tts"),
+        "audioFormat": "audio/mpeg",
+        "requestTransport": "HTTPS POST + JSON",
+        "responseTransport": "streamed HTTP response",
+    }
+
+
 def clean_session_id(value: str) -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9_-]", "", value)[:80]
     if not cleaned:
@@ -87,14 +101,16 @@ async def whisper_transcription(audio: bytes, filename: str, content_type: str) 
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    rime = rime_details()
     return {
         "status": "ok",
         "service": "EnglishAI FastAPI",
         "database": "postgresql+pgvector" if DATABASE_URL.startswith("postgresql") else "sqlite-fallback",
         "providers": {
             "whisper": bool(os.getenv("OPENAI_API_KEY") or os.getenv("STT_API_KEY")),
-            "rime": bool(os.getenv("RIME_API_KEY")),
+            "rime": rime["configured"],
         },
+        "rime": rime,
         "features": ["transcription", "evaluation", "slow-tts", "normal-tts", "recurring-mistakes", "before-after-evidence"],
     }
 
@@ -174,18 +190,19 @@ async def tts(request: TtsRequest) -> Response:
     if not api_key:
         raise HTTPException(status_code=503, detail="Rime is not configured. Use browser speech fallback.")
     time_scale_factor = 1.43 if request.speed == "slow" else 1.0
+    rime = rime_details()
     payload = {
-        "speaker": os.getenv("RIME_VOICE", "astra"),
+        "speaker": rime["speaker"],
         "text": request.text.strip(),
-        "modelId": os.getenv("RIME_MODEL", "coda"),
-        "lang": os.getenv("RIME_LANGUAGE", "en-US"),
+        "modelId": rime["modelId"],
+        "lang": rime["language"],
         "timeScaleFactor": time_scale_factor,
     }
     client = httpx.AsyncClient(timeout=30)
     try:
         upstream_request = client.build_request(
             "POST",
-            os.getenv("RIME_ENDPOINT", "https://users.rime.ai/v1/rime-tts"),
+            rime["endpoint"],
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json", "Accept": "audio/mpeg"},
             json=payload,
         )
@@ -206,4 +223,15 @@ async def tts(request: TtsRequest) -> Response:
             await response.aclose()
             await client.aclose()
 
-    return StreamingResponse(stream_audio(), media_type=response.headers.get("content-type", "audio/mpeg"), headers={"Cache-Control": "no-store", "X-EnglishAI-Speed": request.speed})
+    return StreamingResponse(
+        stream_audio(),
+        media_type=response.headers.get("content-type", "audio/mpeg"),
+        headers={
+            "Cache-Control": "no-store",
+            "X-EnglishAI-Speed": request.speed,
+            "X-Voice-Provider": "Rime",
+            "X-Rime-Model": str(rime["modelId"]),
+            "X-Rime-Speaker": str(rime["speaker"]),
+            "X-Rime-Language": str(rime["language"]),
+        },
+    )

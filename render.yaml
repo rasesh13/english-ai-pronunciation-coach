@@ -12,6 +12,18 @@ services:
         value: 3.12.7
       - key: CORS_ORIGINS
         value: https://english-ai-pronunciation-coach.vercel.app
+      - key: RIME_API_KEY
+        sync: false
+      - key: RIME_MODEL
+        value: coda
+      - key: RIME_VOICE
+        value: astra
+      - key: RIME_LANGUAGE
+        value: en-US
+      - key: RIME_ENDPOINT
+        value: https://users.rime.ai/v1/rime-tts
+      - key: OPENAI_API_KEY
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: english-ai-db

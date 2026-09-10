@@ -10,9 +10,6 @@ type LogEvent = { label: string; time: string; tone: "normal" | "live" | "warnin
 type OrbitNote = { id: string; content: string; createdAt: string };
 type OrbitTimer = { id: string; durationSeconds: number; endsAt: string; status: "active" | "completed" | "cancelled"; createdAt: string };
 type OrbitRun = { id: string; tool: string; query: string; answer?: string; error?: string; elapsedMs: number; status: "success" | "failed" | "cancelled" | "stale"; createdAt: string };
-type OrbitStats = { requests: number; successful: number; failed: number; cancelled: number; stale: number };
-type OrbitServerState = { notes: OrbitNote[]; timers: OrbitTimer[]; runs: OrbitRun[]; activeRequestId: string | null; stats: OrbitStats };
-type OrbitResult = { ok?: boolean; answer?: string; error?: string; elapsedMs?: number; meta?: string; timer?: OrbitTimer; note?: OrbitNote; state?: OrbitServerState };
 type RecognitionResult = { results: ArrayLike<{ 0: { transcript: string } }> };
 type RecognitionEngine = { continuous: boolean; interimResults: boolean; lang: string; start: () => void; stop: () => void; onresult: ((event: RecognitionResult) => void) | null; onerror: (() => void) | null; onend: (() => void) | null };
 type RecognitionConstructor = new () => RecognitionEngine;
@@ -59,6 +56,7 @@ export default function Home() {
   const [history, setHistory] = useState<OrbitRun[]>([]);
   const [activeTimer, setActiveTimer] = useState<OrbitTimer | null>(null);
   const [voiceConfigured, setVoiceConfigured] = useState(false);
+  const [voiceEvidence, setVoiceEvidence] = useState("");
   const [whisperConfigured, setWhisperConfigured] = useState(false);
   const [catalog, setCatalog] = useState<PracticeItem[]>([]);
   const [learnerState, setLearnerState] = useState<LearnerState>({ attempts: [], mistakes: [], stats: { attempts: 0, recurringMistakes: 0, bestScore: 0, averageScore: 0 } });
@@ -113,7 +111,6 @@ export default function Home() {
     void connect();
     return () => { active = false; };
     // The backend bootstrap is intentionally one-shot for this browser session.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -214,6 +211,10 @@ export default function Home() {
       try {
         const response = await fetch("/api/english/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, speed }), signal });
         if (!response.ok) throw new Error("Voice provider unavailable");
+        const provider = response.headers.get("x-voice-provider");
+        const model = response.headers.get("x-rime-model");
+        const speaker = response.headers.get("x-rime-speaker");
+        if (provider === "Rime" && model && speaker) setVoiceEvidence(`${provider.toUpperCase()} · ${model.toUpperCase()} · ${speaker.toUpperCase()}`);
         const blob = await response.blob();
         if (signal?.aborted || !soundOnRef.current) return;
         const url = URL.createObjectURL(blob);
@@ -255,7 +256,7 @@ export default function Home() {
       if (value.state) applyLearnerState(value.state);
     } catch { setBackendStatus("OFFLINE"); }
   }
-  async function updateTimer(_id?: string, _action?: "complete" | "cancel") { setActiveTimer(null); setTimerRemaining(0); }
+  async function updateTimer(_id?: string, _action?: "complete" | "cancel") { void _id; void _action; setActiveTimer(null); setTimerRemaining(0); }
   async function runExperience(query = command, tool = activeTool) {
     clearRun();
     const requestId = ++requestRef.current;
@@ -414,7 +415,7 @@ export default function Home() {
         <div className="control-dock"><button className={`orbit-mark ${isListening ? "listening" : ""}`} onClick={() => void startListening()} aria-label={isListening ? "Stop pronunciation recording" : "Record pronunciation attempt"}>{isListening ? "●" : "O"}</button><button className="dock-primary" onClick={() => state === "INTERRUPTED" ? setMenuOpen(true) : state === "IDLE" || state === "COMPLETE" ? void runExperience(command, inferTool(command, activeTool)) : interrupt()}>{state === "IDLE" ? "HEAR MODEL" : state === "COMPLETE" ? "PLAY AGAIN" : state === "INTERRUPTED" ? "NEW ATTEMPT" : "STOP"}</button><button className="menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label="Menu" aria-expanded={menuOpen}><i /><i /><i /></button></div>
         {menuOpen && <div className="command-panel">
           <div><span>ENGLISHAI COACH</span><button onClick={() => setMenuOpen(false)} aria-label="Close controls">×</button></div>
-          <div className="server-line"><i /> SERVER {backendStatus}<small>{voiceConfigured ? "RIME VOICE" : "BROWSER VOICE"}</small><b>{whisperConfigured ? "WHISPER" : "BROWSER STT"}</b></div>
+          <div className="server-line"><i /> SERVER {backendStatus}<small>{voiceEvidence || (voiceConfigured ? "RIME READY" : "BROWSER VOICE")}</small><b>{whisperConfigured ? "WHISPER" : "BROWSER STT"}</b></div>
           <p>Choose or type a target phrase. Hear it slowly and naturally, then record your attempt.</p>
           <form onSubmit={(event) => { event.preventDefault(); if (command.trim()) { const tool = inferTool(command, activeTool); setActiveTool(tool); void runExperience(command.trim(), tool); } }}><input value={command} onChange={(event) => setCommand(event.target.value)} aria-label="Target English phrase" maxLength={500} /><button type="submit">HEAR</button></form>
           <div className="panel-tools">{toolNames.map((tool, index) => <button type="button" className={activeTool === index ? "active" : ""} onClick={() => { setActiveTool(index); setCommand(phraseForCategory(index)); }} key={tool}>{tool}</button>)}</div>

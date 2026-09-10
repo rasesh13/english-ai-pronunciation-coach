@@ -16,9 +16,9 @@ export async function callFastApi(pathname: string, init?: RequestInit) {
 
 export async function forwardFastApi(response: Response) {
   const headers = new Headers({ "Cache-Control": "no-store" });
-  const contentType = response.headers.get("content-type");
-  const speed = response.headers.get("x-englishai-speed");
-  if (contentType) headers.set("Content-Type", contentType);
-  if (speed) headers.set("X-EnglishAI-Speed", speed);
+  for (const name of ["content-type", "x-englishai-speed", "x-voice-provider", "x-rime-model", "x-rime-speaker", "x-rime-language"]) {
+    const value = response.headers.get(name);
+    if (value) headers.set(name, value);
+  }
   return new Response(response.body, { status: response.status, headers });
 }
